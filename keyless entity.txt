@@ -1,0 +1,407 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.std_logic_unsigned.all; 
+
+entity keyless_door is
+Port (sys_input_l:in std_logic_vector(7 downto 0);
+	sys_input_u:in std_logic_vector(7 downto 0);
+	sys_clk,sys_reset,sys_lock,sys_unlock:in std_logic;
+	sys_led0,sys_led3:out std_logic;
+	a_to_g:out std_logic_vector(6 downto 0);
+	anode_sys:out std_logic_vector(7 downto 0);
+	sys_RGB:out std_logic_vector(2 downto 0));
+end keyless_door;
+
+architecture Structural of keyless_door is
+---------state transition-----------
+component state_transition is
+Port (sw_lock,sw_unlock:in std_logic_vector(7 downto 0);
+     reset,lock,unlock,clk: in std_logic;
+     led0,led3:out std_logic;
+     RGB:out std_logic_vector(2 downto 0);
+     unlock_out:out std_logic_vector(7 downto 0);
+     lock_out:out std_logic_vector(7 downto 0));
+end component state_transition;
+---------sevseg_ag------------------
+component sevseg_ag is
+    Port (input0_7:in std_logic_vector(7 downto 0);
+        input_u_0_7:in std_logic_vector(7 downto 0);
+	  a_g_o_1,a_g_o_2,a_g_o_3,a_g_o_4:out std_logic_vector(6 downto 0);--lock
+	   a_g_u_1,a_g_u_2,a_g_u_3,a_g_u_4:out std_logic_vector(6 downto 0));--unlock
+end component sevseg_ag;
+------------------demux_refresh-----------------
+component refresh_lock is
+    Port (a_g_1,a_g_2,a_g_3,a_g_4,a_g_5,a_g_6,a_g_7,a_g_8:in std_logic_vector(6 downto 0);
+	clk:in std_logic;
+	a_g_out:out std_logic_vector(6 downto 0);
+	anode:out std_logic_vector(7 downto 0));
+end component refresh_lock;
+Signal S9,S10 : std_logic_vector(7 downto 0);
+Signal S1,S2,S3,S4,S5,S6,S7,S8: std_logic_vector(6 downto 0);
+begin
+G1: state_transition port map(sw_lock => sys_input_l,sw_unlock => sys_input_u,reset => sys_reset ,lock => sys_lock ,unlock => sys_unlock,clk => sys_clk,led0 => sys_led0,led3 => sys_led3,RGB => sys_RGB,unlock_out => S9,lock_out => S10 );  
+G2: sevseg_ag port map(input0_7 => S10,input_u_0_7 => S9,a_g_o_1 => S1,a_g_o_2=> S2,a_g_o_3=> S3,a_g_o_4=> S4,a_g_u_1 => S5,a_g_u_2=> S6,a_g_u_3=> S7,a_g_u_4=> S8);
+G3: refresh_lock port map(a_g_1 => S1 ,a_g_2=> S2,a_g_3=> S3,a_g_4=> S4,a_g_5=> S5,a_g_6=> S6,a_g_7=> S7,a_g_8=> S8,clk => sys_clk,a_g_out =>a_to_g,anode =>anode_sys);
+end Structural;
+
+
+--------------------sevseg_ag-------------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.std_logic_unsigned.all;
+
+entity sevseg_ag is
+    Port (input0_7:in std_logic_vector(7 downto 0);
+        input_u_0_7:in std_logic_vector(7 downto 0);
+	  a_g_o_1,a_g_o_2,a_g_o_3,a_g_o_4:out std_logic_vector(6 downto 0);--lock
+	   a_g_u_1,a_g_u_2,a_g_u_3,a_g_u_4:out std_logic_vector(6 downto 0));--unlock
+end sevseg_ag;
+
+architecture Behavioral of sevseg_ag is
+begin
+processSW1_0:process(input0_7(1 downto 0)) is
+begin
+case input0_7(1 downto 0) is
+	when "00" =>
+		a_g_o_1<="1000000";
+	when "01" =>
+		a_g_o_1<="1111001";
+	when "10" =>
+		a_g_o_1<="0100100";
+	when "11" =>
+		a_g_o_1<="0110000";
+	when others =>
+		a_g_o_1<="1111111";
+end case;
+end process processSW1_0;
+
+processSW3_2:process(input0_7(3 downto 2)) is
+begin
+case input0_7(3 downto 2) is
+	when "00" =>
+		a_g_o_2<="1000000";
+	when "01" =>
+		a_g_o_2<="1111001";
+	when "10" =>
+		a_g_o_2<="0100100";
+	when "11" =>
+		a_g_o_2<="0110000";
+	when others =>
+		a_g_o_2<="1111111";
+end case;
+end process processSW3_2;
+
+processSW5_4:process(input0_7(5 downto 4)) is
+begin
+case input0_7(5 downto 4) is
+	when "00" =>
+		a_g_o_3<="1000000";
+	when "01" =>
+		a_g_o_3<="1111001";
+	when "10" =>
+		a_g_o_3<="0100100";
+	when "11" =>
+		a_g_o_3<="0110000";
+	when others =>
+		a_g_o_3<="1111111";
+end case;
+end process processSW5_4;
+
+processSW7_6:process(input0_7(7 downto 6)) is
+begin
+case input0_7(7 downto 6) is
+	when "00" =>
+		a_g_o_4<="1000000";
+	when "01" =>
+		a_g_o_4<="1111001";
+	when "10" =>
+		a_g_o_4<="0100100";
+	when "11" =>
+		a_g_o_4<="0110000";
+	when others =>
+		a_g_o_4<="1111111";
+end case;
+end process processSW7_6;
+------------------------------------unlock-----
+processSW_u_1_0:process(input_u_0_7(1 downto 0)) is
+begin
+case input_u_0_7(1 downto 0) is
+	when "00" =>
+		a_g_u_1<="1000000";
+	when "01" =>
+		a_g_u_1<="1111001";
+	when "10" =>
+		a_g_u_1<="0100100";
+	when "11" =>
+		a_g_u_1<="0110000";
+	when others =>
+		a_g_u_1<="1111111";
+end case;
+end process processSW_u_1_0;
+
+processSW_u_3_2:process(input_u_0_7(3 downto 2)) is
+begin
+case input_u_0_7(3 downto 2) is
+	when "00" =>
+		a_g_u_2<="1000000";
+	when "01" =>
+		a_g_u_2<="1111001";
+	when "10" =>
+		a_g_u_2<="0100100";
+	when "11" =>
+		a_g_u_2<="0110000";
+	when others =>
+		a_g_u_1<="1111111";
+end case;
+end process processSW_u_3_2;
+
+processSW_u_5_4:process(input_u_0_7(5 downto 4)) is
+begin
+case input_u_0_7(5 downto 4) is
+	when "00" =>
+		a_g_u_3<="1000000";
+	when "01" =>
+		a_g_u_3<="1111001";
+	when "10" =>
+		a_g_u_3<="0100100";
+	when "11" =>
+		a_g_u_3<="0110000";
+	when others =>
+		a_g_u_3<="1111111";
+end case;
+end process processSW_u_5_4;
+
+processSW_u_7_6:process(input_u_0_7(7 downto 6)) is
+begin
+case input_u_0_7(7 downto 6) is
+	when "00" =>
+		a_g_u_4<="1000000";
+	when "01" =>
+		a_g_u_4<="1111001";
+	when "10" =>
+		a_g_u_4<="0100100";
+	when "11" =>
+		a_g_u_4<="0110000";
+	when others =>
+		a_g_u_4<="1111111";
+end case;
+end process processSW_u_7_6;
+end Behavioral;
+-----------------demux and refresh----------------------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.std_logic_unsigned.all;
+
+entity refresh_lock is
+    Port (a_g_1,a_g_2,a_g_3,a_g_4,a_g_5,a_g_6,a_g_7,a_g_8:in std_logic_vector(6 downto 0);
+	clk:in std_logic;
+	a_g_out:out std_logic_vector(6 downto 0);
+	anode:out std_logic_vector(7 downto 0));
+end refresh_lock;
+
+architecture Behavioral of refresh_lock is
+signal count :std_logic_vector(2 downto 0):="000";
+signal count1:std_logic_vector(2 downto 0):="000";
+signal count2 :std_logic_vector(27 downto 0):=x"0000000";
+signal int_clk: std_logic :='0';
+begin
+counter:process(int_clk) is
+begin
+if(rising_edge(int_clk)) then
+	if(count = "111")then
+		count<="000";
+		a_g_out<=a_g_8;
+	elsif(count ="000") then
+		count<=count+1;
+		a_g_out<=a_g_1; 
+	elsif(count ="001") then
+		count<=count+1;
+		a_g_out<=a_g_2;
+	elsif(count ="010") then
+		count<=count+1;
+		a_g_out<=a_g_3;
+    elsif(count ="011") then
+        count<=count+1;
+        a_g_out<=a_g_4;
+	elsif(count ="100") then
+        count<=count+1;
+        a_g_out<=a_g_5; 
+	elsif(count ="101") then
+        count<=count+1;
+        a_g_out<=a_g_6; 
+	elsif(count ="110") then
+        count<=count+1;
+        a_g_out<=a_g_7;
+	end if;
+end if;
+end process counter;
+
+anode_counter:process(int_clk) is
+begin
+if(rising_edge(int_clk)) then
+	if(count1 = "111")then
+		count1<="000";
+		anode<="01111111";
+	elsif(count1 ="000") then
+		count1<=count1+1;
+		anode<="11111110"; 
+	elsif(count ="001") then
+		count1<=count1+1;
+		anode<="11111101";
+	elsif(count1 ="010") then
+		count1<=count1+1;
+		anode<="11111011";
+	elsif(count1 ="011") then
+        count1<=count1+1;
+        anode<="11110111";
+	elsif(count1 ="100") then
+        count1<=count1+1;
+        anode<="11101111";
+	elsif(count1 ="101") then
+        count1<=count1+1;
+        anode<="11011111";
+	elsif(count1 ="110") then
+        count1<=count1+1;
+        anode<="10111111";
+	end if;
+end if;
+end process anode_counter;
+slow_clock_process: process(clk) is
+begin
+        if(rising_edge(clk)) then
+            if count2 < x"00186A0" then
+                count2<=count2+1;
+        else 
+            int_clk<= not int_clk;
+            count2<=(others => '0');
+        end if;
+      end if;
+end process slow_clock_process;
+end Behavioral;
+----------------------------------state transition----------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.std_logic_unsigned.all;
+
+entity state_transition is
+Port (sw_lock,sw_unlock:in std_logic_vector(7 downto 0);
+     reset,lock,unlock,clk: in std_logic;
+     led0,led3:out std_logic;
+     RGB:out std_logic_vector(2 downto 0);
+     unlock_out:out std_logic_vector(7 downto 0);
+     lock_out:out std_logic_vector(7 downto 0));
+end state_transition;
+
+architecture Behavioral of state_transition is
+type statetype is(state0,state1,state2,state3,state4,state5);
+signal state,next_state :statetype:=state0;
+signal count :std_logic_vector(27 downto 0):=x"0000000";
+signal int_clk: std_logic :='0';
+signal success: std_logic;
+signal temp : std_logic_vector(7 downto 0);
+begin
+process(state,lock,unlock) is
+begin 
+    led3 <='0';
+    led0 <='0';
+    next_state<=state;
+    case state is
+    when state0 =>
+    unlock_out<="00000000";
+    lock_out<="00000000";
+    led3 <='1';
+    RGB<="010";
+    if(lock= '1')then
+        temp<=sw_lock;
+         next_state<=state1;
+    else next_state<=state0;   
+    end if;
+    when state1 =>
+    unlock_out<="00000000";
+    lock_out<=temp;
+     if(temp = sw_unlock)then
+        success<='1';
+        else
+        success<='0';
+        end if;
+        if(lock= '1')then
+        next_state<=state2;
+        elsif(unlock= '1') and (success = '0')then
+           next_state<=state3;
+        elsif(unlock ='1') and (success ='1') then
+            next_state<=state4; 
+          --  next_state<=state3;
+        end if; 
+        RGB<="000";
+        led0<='1';
+        led3<='0';       
+    when state2 =>
+    led0<='1';
+    lock_out<=temp;
+    RGB<="001";
+    if(temp = sw_unlock)then
+            success<='1';
+            else
+            success<='0';
+            end if;
+        if(unlock = '1') and (success='0') then
+	next_state<=state3;
+	elsif(unlock = '1') and (success='1') then
+	next_state<=state4;
+	end if;
+    when state3 =>
+    led0<='1';
+	RGB<="100";
+	if(temp = sw_unlock)then
+        success<='1';
+        else
+        success<='0';
+    end if;
+	if(unlock ='1') and (success='1') then
+	   next_state<=state4;
+	end if;
+    when state4 =>
+    lock_out<="00000000";
+    unlock_out<=sw_unlock;
+	RGB<="000";
+	led0<='0';
+	led3<='1';
+        if(lock='1') then
+        temp<=sw_lock;
+	   next_state<=state1;
+	elsif(unlock ='1')then
+	next_state<=state5;
+	end if;
+    when state5 =>
+    led3<='1';
+	RGB<="110";
+	if(lock='1') then
+	temp<=sw_lock;
+	next_state<=state1; 
+	end if;             
+    end case;
+end process;
+
+clk_process: process is
+begin
+wait until(int_clk'event and int_clk ='1');
+    if reset ='1' then
+    state <= state0;
+    else 
+    state<=next_state;
+    end if;
+end process clk_process;
+
+slow_clock_process: process(clk) is
+begin
+        if(rising_edge(clk)) then
+            if count < x"0989680" then
+                count<=count+1;
+        else 
+            int_clk<= not int_clk;
+            count<=(others => '0');
+        end if;
+      end if;
+end process slow_clock_process;
+
+end Behavioral;

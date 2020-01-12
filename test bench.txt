@@ -1,0 +1,100 @@
+library IEEE;
+use IEEE.Std_logic_1164.all;
+use IEEE.Numeric_Std.all;
+
+entity keyless_door_tb is
+end;
+
+architecture bench of keyless_door_tb is
+
+  component keyless_door
+  Port (sys_input_l:in std_logic_vector(7 downto 0);
+  	sys_input_u:in std_logic_vector(7 downto 0);
+  	sys_clk,sys_reset,sys_lock,sys_unlock:in std_logic;
+  	sys_led0,sys_led3:out std_logic;
+  	a_to_g:out std_logic_vector(6 downto 0);
+  	anode_sys:out std_logic_vector(7 downto 0);
+  	sys_RGB:out std_logic_vector(2 downto 0));
+  end component;
+
+  signal sys_input_l: std_logic_vector(7 downto 0);
+  signal sys_input_u: std_logic_vector(7 downto 0);
+  signal sys_clk,sys_reset,sys_lock,sys_unlock: std_logic;
+  signal sys_led0,sys_led3: std_logic;
+  signal a_to_g: std_logic_vector(6 downto 0);
+  signal anode_sys: std_logic_vector(7 downto 0);
+  signal sys_RGB: std_logic_vector(2 downto 0);
+
+  constant clock_period: time := 10 ns;
+  signal stop_the_clock: boolean;
+
+begin
+
+  uut: keyless_door port map ( sys_input_l => sys_input_l,
+                               sys_input_u => sys_input_u,
+                               sys_clk     => sys_clk,
+                               sys_reset   => sys_reset,
+                               sys_lock    => sys_lock,
+                               sys_unlock  => sys_unlock,
+                               sys_led0    => sys_led0,
+                               sys_led3    => sys_led3,
+                               a_to_g      => a_to_g,
+                               anode_sys   => anode_sys,
+                               sys_RGB     => sys_RGB );
+
+  stimulus: process
+  begin
+  
+    -- Put initialisation code here
+	sys_input_l<= "11100100";
+	sys_input_u<="11100100";
+	sys_reset<= '1';
+	sys_lock<='0';
+	sys_unlock<='0';
+	wait for 100 ns;
+	sys_input_l<= "11100100";
+	sys_input_u<="00000000";
+	sys_reset<= '0';
+	sys_lock<='1';
+	sys_unlock<='0';
+	wait for 100 ns;
+	sys_input_l<= "11100100";
+	sys_input_u<="11100100";
+	sys_reset<= '0';
+	sys_lock<='0';
+	sys_unlock<='1';
+	wait for 100 ns;
+	sys_input_l<= "00001100";
+	sys_input_u<="00000000";
+	sys_reset<= '0';
+	sys_lock<='1';
+	sys_unlock<='0';
+	wait for 100 ns;
+	sys_input_l<= "00001100";
+	sys_input_u<="00000000";
+	sys_reset<= '0';
+	sys_lock<='1';
+	sys_unlock<='0';
+	wait for 100 ns;
+	sys_input_l<= "00001100";
+	sys_input_u<="00000000";
+	sys_reset<= '1';
+	sys_lock<='0';
+	sys_unlock<='0';
+	wait for 100 ns;
+    -- Put test bench stimulus code here
+
+    stop_the_clock <= false;
+    wait;
+  end process;
+
+  clocking: process
+  begin
+    while not stop_the_clock loop
+      sys_clk <= '0', '1' after clock_period / 2;
+      wait for clock_period;
+    end loop;
+    wait;
+  end process;
+
+end;
