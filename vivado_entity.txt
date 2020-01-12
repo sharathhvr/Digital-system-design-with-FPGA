@@ -1,0 +1,449 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity full_system is
+port( sysclk :in std_logic;
+	a_to_gout : out std_logic_vector(6 downto 0);
+	anode_out : out std_logic_vector(7 downto 0);
+	led6_0: out std_logic_vector(6 downto 0));
+end full_system;
+
+architecture structural of full_system is
+-----------mux---------------------
+component refresh_lock is
+    Port (a_g_1,a_g_2,a_g_3,a_g_4,a_g_5,a_g_6,a_g_7,a_g_8:in std_logic_vector(6 downto 0);
+	clk:in std_logic;
+	a_g_out:out std_logic_vector(6 downto 0);
+	anode:out std_logic_vector(7 downto 0));
+end component refresh_lock;
+----------digital clock------------
+component digital_clock is
+Port (clk : in std_logic;
+	minute_out : out std_logic_vector(5 downto 0):="000000"; 
+	hour_out: out std_logic_vector(5 downto 0):="000000";
+	led6_to_0 : out std_logic_vector(6 downto 0):="0000000");
+end component digital_clock;
+----------a to g-----------------
+component a_to_g is
+Port (bin_in : in std_logic_vector(5 downto 0):="000000"; 
+	a_to_g1,a_to_g2: out std_logic_vector(6 downto 0));
+end component a_to_g;
+
+Signal S3,S4,S5,S6 : std_logic_vector(6 downto 0);
+Signal S1,S2 : std_logic_vector(5 downto 0);
+begin
+G1: digital_clock port map( clk=>sysclk,minute_out => S1,hour_out => S2,led6_to_0 =>led6_0);
+G2: a_to_g port map(bin_in => S1,a_to_g1 => S5,a_to_g2 => S6);---minute
+G3: a_to_g port map(bin_in => S2,a_to_g1 => S3,a_to_g2 => S4);---hr
+G4: refresh_lock port map(a_g_1 => S3,a_g_2 => S4 ,a_g_3 => S5,a_g_4 => S6 ,a_g_5 =>S6 ,a_g_6 => S5 ,a_g_7=> S4,a_g_8 => S3,clk => sysclk,a_g_out => a_to_gout,anode => anode_out);
+end structural;
+
+---------------mux------------------------
+
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.std_logic_unsigned.all;
+
+entity refresh_lock is
+    Port (a_g_1,a_g_2,a_g_3,a_g_4,a_g_5,a_g_6,a_g_7,a_g_8:in std_logic_vector(6 downto 0);
+	clk:in std_logic;
+	a_g_out:out std_logic_vector(6 downto 0);
+	anode:out std_logic_vector(7 downto 0));
+end refresh_lock;
+
+architecture Behavioral of refresh_lock is
+signal count :std_logic_vector(2 downto 0):="000";
+signal count1:std_logic_vector(2 downto 0):="000";
+signal count2 :std_logic_vector(27 downto 0):=x"0000000";
+signal int_clk: std_logic :='0';
+begin
+counter:process(int_clk) is
+begin
+if(rising_edge(int_clk)) then
+	if(count = "111")then
+		count<="000";
+		a_g_out<=a_g_8;
+	elsif(count ="000") then
+		count<=count+1;
+		a_g_out<=a_g_1; 
+	elsif(count ="001") then
+		count<=count+1;
+		a_g_out<=a_g_2;
+	elsif(count ="010") then
+		count<=count+1;
+		a_g_out<=a_g_3;
+    elsif(count ="011") then
+        count<=count+1;
+        a_g_out<=a_g_4;
+	elsif(count ="100") then
+        count<=count+1;
+        a_g_out<=a_g_5; 
+	elsif(count ="101") then
+        count<=count+1;
+        a_g_out<=a_g_6; 
+	elsif(count ="110") then
+        count<=count+1;
+        a_g_out<=a_g_7;
+	end if;
+end if;
+end process counter;
+
+anode_counter:process(int_clk) is
+begin
+if(rising_edge(int_clk)) then
+	if(count1 = "111")then
+		count1<="000";
+		anode<="01111111";
+	elsif(count1 ="000") then
+		count1<=count1+1;
+		anode<="11111110"; 
+	elsif(count ="001") then
+		count1<=count1+1;
+		anode<="11111101";
+	elsif(count1 ="010") then
+		count1<=count1+1;
+		anode<="11111011";
+	elsif(count1 ="011") then
+        count1<=count1+1;
+        anode<="11110111";
+	elsif(count1 ="100") then
+        count1<=count1+1;
+        anode<="11101111";
+	elsif(count1 ="101") then
+        count1<=count1+1;
+        anode<="11011111";
+	elsif(count1 ="110") then
+        count1<=count1+1;
+        anode<="10111111";
+	end if;
+end if;
+end process anode_counter;
+slow_clock_process: process(clk) is
+begin
+        if(rising_edge(clk)) then
+            if count2 < x"0000000" then
+                count2<=count2+1;
+        else 
+            int_clk<= not int_clk;
+            count2<=(others => '0');
+        end if;
+      end if;
+end process slow_clock_process;
+end Behavioral;
+
+---------------a_to_g----------------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity a_to_g is
+Port (bin_in : in std_logic_vector(5 downto 0):="000000"; 
+	a_to_g1,a_to_g2: out std_logic_vector(6 downto 0));
+end a_to_g;
+architecture structural of a_to_g is
+begin
+process(bin_in) is
+begin
+case bin_in is
+	when "000000" =>
+		a_to_g1<="1000000";
+		a_to_g2<="1000000";--00
+	when "000001" =>
+		a_to_g1<="1000000";
+		a_to_g2<="1111001";--01
+	when "000010" =>
+		a_to_g1<="1000000";
+		a_to_g2<="0100100";--02
+	when "000011" =>
+		a_to_g1<="1000000";
+		a_to_g2<="0110000";--03
+	when "000100" =>
+		a_to_g1<="1000000";
+		a_to_g2<="0011011";--04
+	when "000101" =>
+		a_to_g1<="1000000";
+		a_to_g2<="0010010";--05
+	when "000110" =>
+		a_to_g1<="1000000";
+		a_to_g2<="0000010";--06
+	when "000111" =>
+		a_to_g1<="1000000";
+		a_to_g2<="1111000";--07
+	when "001000" =>
+		a_to_g1<="1000000";
+		a_to_g2<="0000000";--08
+	when "001001" =>
+		a_to_g1<="1000000";
+		a_to_g2<="0011000";--09
+	when "001010" =>
+		a_to_g1<="1111001";
+		a_to_g2<="1000000";--10
+	when "001011" =>
+		a_to_g1<="1111001";
+		a_to_g2<="1111001";--11
+	when "001100" =>
+		a_to_g1<="1111001";
+		a_to_g2<="0100100";--12
+	when "001101" =>
+		a_to_g1<="1111001";
+		a_to_g2<="0110000";--13
+	when "001110" =>
+		a_to_g1<="1111001";
+		a_to_g2<="0011011";--14
+	when "001111" =>
+		a_to_g1<="1111001";
+		a_to_g2<="0010010";--15
+	when "010000" =>
+		a_to_g1<="1111001";
+		a_to_g2<="1000000";--16
+	when "010001" =>
+		a_to_g1<="1111001";
+		a_to_g2<="1111000";--17
+	when "010010" =>
+		a_to_g1<="1111001";
+		a_to_g2<="0000000";--18
+	when "010011" =>
+		a_to_g1<="1111001";
+		a_to_g2<="0011000";--19
+	when "010100" =>
+		a_to_g1<="0100100";
+		a_to_g2<="1000000";--20
+	when "010101" =>
+		a_to_g1<="0100100";
+		a_to_g2<="1111001";--21
+	when "010110" =>
+		a_to_g1<="0100100";
+		a_to_g2<="0100100";--22
+	when "010111" =>
+		a_to_g1<="0100100";
+		a_to_g2<="0110000";--23
+	when "011000" =>
+		a_to_g1<="0100100";
+		a_to_g2<="0011011";--24
+	when "011001" =>
+		a_to_g1<="0100100";
+		a_to_g2<="0010010";--25
+	when "011010" =>
+		a_to_g1<="0100100";
+		a_to_g2<="0000010";--26
+	when "011011" =>
+		a_to_g1<="0100100";
+		a_to_g2<="1111000";--27
+	when "011100" =>
+		a_to_g1<="0100100";
+		a_to_g2<="0000000";--28
+	when "011101" =>
+		a_to_g1<="0100100";
+		a_to_g2<="0011000";--29
+	when "011110" =>
+		a_to_g1<="0110000";
+		a_to_g2<="1000000";--30
+	when "011111" =>
+		a_to_g1<="0110000";
+		a_to_g2<="1111001";--31
+	when "100000" =>
+		a_to_g1<="0110000";
+		a_to_g2<="0100100";--32
+	when "100001" =>
+		a_to_g1<="0110000";
+		a_to_g2<="0110000";--33
+	when "100010" =>
+		a_to_g1<="0110000";
+		a_to_g2<="0011011";--34
+	when "100011" =>
+		a_to_g1<="0110000";
+		a_to_g2<="0010010";--35
+	when "100100" =>
+		a_to_g1<="0110000";
+		a_to_g2<="0000010";--36
+	when "100101" =>
+		a_to_g1<="0110000";
+		a_to_g2<="1111000";--37
+	when "100110" =>
+		a_to_g1<="0110000";
+		a_to_g2<="0000000";--38
+	when "100111" =>
+		a_to_g1<="0110000";
+		a_to_g2<="0011000";--39
+	when "101000" =>
+		a_to_g1<="0011011";
+		a_to_g2<="1000000";--40
+	when "101001" =>
+		a_to_g1<="0011011";
+		a_to_g2<="1111001";--41
+	when "101010" =>
+		a_to_g1<="0011011";
+		a_to_g2<="0100100";--42
+	when "101011" =>
+		a_to_g1<="0011011";
+		a_to_g2<="0110000";--43
+	when "101100" =>
+		a_to_g1<="0011011";
+		a_to_g2<="0011011";--44
+	when "101101" =>
+		a_to_g1<="0011011";
+		a_to_g2<="0010010";--45
+	when "101110" =>
+		a_to_g1<="0011011";
+		a_to_g2<="0000010";--46
+	when "101111" =>
+		a_to_g1<="0011011";
+		a_to_g2<="1111000";--47
+	when "110000" =>
+		a_to_g1<="0011011";
+		a_to_g2<="0000000";--48
+	when "110001" =>
+		a_to_g1<="0011011";
+		a_to_g2<="0011000";--49
+	when "110010" =>
+		a_to_g1<="0010010";
+		a_to_g2<="1000000";--50
+	when "110011" =>
+		a_to_g1<="0010010";
+		a_to_g2<="1111001";--51
+	when "110100" =>
+		a_to_g1<="0010010";
+		a_to_g2<="0100100";--52
+	when "110101" =>
+		a_to_g1<="0010010";
+		a_to_g2<="0110000";--53
+	when "110110" =>
+		a_to_g1<="0010010";
+		a_to_g2<="0011011";--54
+	when "110111" =>
+		a_to_g1<="0010010";
+		a_to_g2<="0010010";--55
+	when "111000" =>
+		a_to_g1<="0010010";
+		a_to_g2<="0000010";--56
+	when "111001" =>
+		a_to_g1<="0010010";
+		a_to_g2<="1111000";--57
+	when "111010" =>
+		a_to_g1<="0010010";
+		a_to_g2<="0000000";--58
+	when "111011" =>
+		a_to_g1<="0010010";
+		a_to_g2<="0011000";--59
+	when others =>
+		a_to_g1<="1000000";
+		a_to_g2<="1000000";
+ end case;
+end process;
+end structural;
+---------------clock----------------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity digital_clock is
+
+Port (clk : in std_logic;
+	minute_out : out std_logic_vector(5 downto 0):="000000"; 
+	hour_out: out std_logic_vector(5 downto 0):="000000";
+	led6_to_0 : out std_logic_vector(6 downto 0):="0000000");
+end digital_clock;
+
+architecture structural of digital_clock is
+signal m1: std_logic_vector(5 downto 0):="000000";
+signal h1 : std_logic_vector(5 downto 0):="000000";
+signal count1 :std_logic_vector(27 downto 0):=x"000012B";
+signal count2 :std_logic_vector(27 downto 0):=x"0004650";
+signal count3 :std_logic_vector(27 downto 0):=x"0000004";
+signal m_a_1: std_logic_vector(5 downto 0):="000000";----alarm minute
+signal h_a_1 : std_logic_vector(5 downto 0):="000000";-----alarm hour
+signal seconds :std_logic_vector(6 downto 0):="0000000";
+
+signal int_clk1: std_logic :='0';
+signal int_clk2: std_logic :='0';
+signal int_clk3: std_logic :='0';
+
+signal flag: std_logic:='1';
+begin
+-----state transition------------
+--------seconds-----------------
+sec_process:process(int_clk3) is
+begin
+if(flag ='1') then
+ if (rising_edge(int_clk3)) then
+	if( seconds < "0111011")then
+		seconds<=seconds+1;
+	else
+		seconds<="0000000";
+	end if;
+led6_to_0<= seconds;
+end if;
+end if;
+end process sec_process;
+--------minute------------------
+M1_process:process(int_clk1,m1) is
+begin
+if(flag ='1') then
+ if (rising_edge(int_clk1)) then
+	if(m1 < "111011") then
+		m1<=m1+1;
+	else
+		m1<="000000";
+	end if;
+minute_out<=m1;
+end if;
+else
+minute_out<=m1;
+end if;
+end process M1_process;
+--------hour------------------
+M2_process:process(int_clk2) is
+begin
+if(flag='1')then
+ if( rising_edge(int_clk2))then
+	if(h1 < "010111") then
+		h1<=h1+1;
+	else
+		h1<="000000";
+	end if;
+hour_out<=h1;
+end if;
+else 
+hour_out<=h1;
+end if;
+end process M2_process;
+
+----------- clocks-----------------
+------------seconds clock---------
+slow_clock_1sec: process(clk) is
+begin
+        if(rising_edge(clk)) then
+            if count3 < x"0000004" then
+                count3<=count3+1;
+        else 
+            int_clk3<= not int_clk3;
+            count3<=(others => '0');
+        end if;
+      end if;
+end process slow_clock_1sec;
+------------60sec clock-----------
+slow_clock_60sec: process(clk) is
+begin
+        if(rising_edge(clk)) then
+            if count1 < x"000012B" then
+                count1<=count1+1;
+        else 
+            int_clk1<= not int_clk1;
+            count1<=(others => '0');
+        end if;
+      end if;
+end process slow_clock_60sec;
+------------1hr clock-----------
+slow_clock_1hr: process(clk) is
+begin
+        if(rising_edge(clk)) then
+            if count2 < x"0004650" then
+                count2<=count2+1;
+        else 
+            int_clk2<= not int_clk2;
+            count2<=(others => '0');
+        end if;
+      end if;
+end process slow_clock_1hr;
+end structural;
